@@ -413,3 +413,7 @@ func BenchmarkHeader(b *testing.B) {
 		logging.putBuffer(buf)
 	}
 }
+
+func TestLog(t *testing.T) {
+	Info("xxxxxxxx")
+}
