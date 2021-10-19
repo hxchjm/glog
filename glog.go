@@ -576,10 +576,10 @@ func (l *loggingT) formatHeader(s severity, file string, line int) *buffer {
 	buf.twoDigits(18, second)
 	buf.tmp[20] = '.'
 	buf.nDigits(6, 21, now.Nanosecond()/1000, '0')
-	buf.tmp[28] = ' '
+	buf.tmp[27] = ' '
 	//buf.nDigits(7, 22, pid, ' ') // TODO: should be TID
 	//buf.tmp[29] = ' '
-	buf.Write(buf.tmp[:29])
+	buf.Write(buf.tmp[:28])
 	buf.WriteString(severityName[s])
 	buf.WriteString(" ")
 	buf.WriteString(file)
