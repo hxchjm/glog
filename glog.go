@@ -563,7 +563,7 @@ func (l *loggingT) formatHeader(s severity, file string, line int) *buffer {
 	hour, minute, second := now.Clock()
 	// Lmmdd hh:mm:ss.uuuuuu threadid file:line]
 	buf.tmp[0] = '['
-	buf.nDigits(4,1, year,'0')
+	buf.nDigits(4, 1, year, '0')
 	buf.tmp[5] = '/'
 	buf.twoDigits(6, int(month))
 	buf.tmp[8] = '/'
@@ -699,13 +699,10 @@ func (l *loggingT) output(s severity, buf *buffer, file string, line int, alsoTo
 		switch s {
 		case fatalLog:
 			l.file[fatalLog].Write(data)
-			fallthrough
 		case errorLog:
 			l.file[errorLog].Write(data)
-			fallthrough
 		case warningLog:
 			l.file[warningLog].Write(data)
-			fallthrough
 		case infoLog:
 			l.file[infoLog].Write(data)
 		}
@@ -836,6 +833,7 @@ func (sb *syncBuffer) rotateFile(now time.Time) error {
 		sb.Flush()
 		sb.file.Close()
 	}
+
 	var err error
 	sb.file, _, err = create(severityName[sb.sev], now)
 	sb.nbytes = 0

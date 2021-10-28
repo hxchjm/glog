@@ -48,8 +48,8 @@ func createLogDirs() {
 }
 
 var (
-	pid      = os.Getpid()
-	program  = filepath.Base(os.Args[0])
+	//pid      = os.Getpid()
+	//program  = filepath.Base(os.Args[0])
 	host     = "unknownhost"
 	userName = "unknownuser"
 )
@@ -81,19 +81,16 @@ func shortHostname(hostname string) string {
 // logName returns a new log file name containing tag, with start time t, and
 // the name for the symlink for tag.
 func logName(tag string, t time.Time) (name, link string) {
-	name = fmt.Sprintf("%s.%s.%s.log.%s.%04d%02d%02d-%02d%02d%02d.%d",
-		program,
-		host,
-		userName,
-		tag,
+	name = fmt.Sprintf("%s.log.%04d%02d%02d%02d%02d%02d",
+		strings.ToLower(tag),
 		t.Year(),
 		t.Month(),
 		t.Day(),
 		t.Hour(),
 		t.Minute(),
 		t.Second(),
-		pid)
-	return name, program + "." + tag
+	)
+	return name, strings.ToLower(tag) + ".log"
 }
 
 var onceLogDirs sync.Once
