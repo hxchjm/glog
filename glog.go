@@ -408,11 +408,50 @@ func init() {
 
 	logging.setVState(0, nil, false)
 	go logging.flushDaemon()
+
+	ClearLog() //定时清理日志
 }
 
 // Flush flushes all pending log I/O.
 func Flush() {
 	logging.lockAndFlushAll()
+}
+
+//ClearLog clear the log which is out of time
+func ClearLog() {
+	startTimer(func() {
+		dir := logDirs[len(logDirs)-1] //取最上面的dir
+		files, _ := os.ReadDir(dir)
+		for _, file := range files {
+			name := file.Name()
+			nameLen := len(name)
+			day := name[nameLen-9 : nameLen-1]
+			t := time.Now()
+			dayNow := fmt.Sprintf("%04d%02d%02d",
+				t.Year(),
+				t.Month(),
+				t.Day(),
+			)
+			if day < dayNow {
+				fname := filepath.Join(dir, name)
+				os.Remove(fname)
+			}
+		}
+	})
+}
+
+func startTimer(f func()) {
+	go func() {
+		for {
+			f()
+			now := time.Now()
+			// 计算下一个零点
+			next := now.Add(time.Hour * 24)
+			next = time.Date(next.Year(), next.Month(), next.Day(), 0, 0, 0, 0, next.Location())
+			t := time.NewTimer(next.Sub(now))
+			<-t.C
+		}
+	}()
 }
 
 // loggingT collects all the global state of the logging setup.
@@ -878,7 +917,7 @@ func (l *loggingT) createFiles(sev severity) error {
 	return nil
 }
 
-const flushInterval = 30 * time.Second
+const flushInterval = 2 * time.Second
 
 // flushDaemon periodically flushes the log file buffers.
 func (l *loggingT) flushDaemon() {

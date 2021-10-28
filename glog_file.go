@@ -81,14 +81,11 @@ func shortHostname(hostname string) string {
 // logName returns a new log file name containing tag, with start time t, and
 // the name for the symlink for tag.
 func logName(tag string, t time.Time) (name, link string) {
-	name = fmt.Sprintf("%s.log.%04d%02d%02d%02d%02d%02d",
+	name = fmt.Sprintf("%s.log.%04d%02d%02d",
 		strings.ToLower(tag),
 		t.Year(),
 		t.Month(),
 		t.Day(),
-		t.Hour(),
-		t.Minute(),
-		t.Second(),
 	)
 	return name, strings.ToLower(tag) + ".log"
 }
