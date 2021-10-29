@@ -105,13 +105,18 @@ const (
 	numSeverity = 4
 )
 
-const severityChar = "IWEF"
-
 var severityName = []string{
 	infoLog:    "INFO",
 	warningLog: "WARN",
 	errorLog:   "ERROR",
 	fatalLog:   "FATAL",
+}
+
+var logFileCntS = map[severity]int{
+	infoLog:    0,
+	warningLog: 0,
+	errorLog:   0,
+	fatalLog:   0,
 }
 
 // get returns the value of the severity.
@@ -267,7 +272,7 @@ func (m *moduleSpec) String() string {
 		if i > 0 {
 			b.WriteRune(',')
 		}
-		fmt.Fprintf(&b, "%s=%d", f.pattern, f.level)
+		_, _ = fmt.Fprintf(&b, "%s=%d", f.pattern, f.level)
 	}
 	return b.String()
 }
@@ -420,26 +425,33 @@ func Flush() {
 //ClearLog clear the log which is out of time
 func ClearLog() {
 	startTimer(func() {
-		dir := logDirs[len(logDirs)-1] //取最上面的dir
+		dir := logDirs[0] //取最上面的dir
 		files, _ := os.ReadDir(dir)
 		for _, file := range files {
 			name := file.Name()
 			nameLen := len(name)
-			day := name[nameLen-9 : nameLen-1]
+			if nameLen != len("error.log.20211029.00") && nameLen != len("info.log.20211029.00") {
+				continue
+			}
+			if !strings.Contains(name, "info.log.") && !strings.Contains(name, "error.log.") {
+				continue
+			}
+			day := name[nameLen-11 : nameLen-3]
 			t := time.Now()
 			dayNow := fmt.Sprintf("%04d%02d%02d",
 				t.Year(),
 				t.Month(),
-				t.Day(),
+				t.Day()-RemainDays,
 			)
 			if day < dayNow {
 				fname := filepath.Join(dir, name)
-				os.Remove(fname)
+				_ = os.Remove(fname)
 			}
 		}
 	})
 }
 
+//每天晚上00:00:00执行日志清理
 func startTimer(f func()) {
 	go func() {
 		for {
@@ -737,11 +749,13 @@ func (l *loggingT) output(s severity, buf *buffer, file string, line int, alsoTo
 		}
 		switch s {
 		case fatalLog:
-			l.file[fatalLog].Write(data)
+			//l.file[fatalLog].Write(data)
+			fallthrough
 		case errorLog:
 			l.file[errorLog].Write(data)
 		case warningLog:
-			l.file[warningLog].Write(data)
+			//l.file[warningLog].Write(data)
+			fallthrough
 		case infoLog:
 			l.file[infoLog].Write(data)
 		}
@@ -874,7 +888,7 @@ func (sb *syncBuffer) rotateFile(now time.Time) error {
 	}
 
 	var err error
-	sb.file, _, err = create(severityName[sb.sev], now)
+	sb.file, _, err = create(sb.sev, now)
 	sb.nbytes = 0
 	if err != nil {
 		return err
@@ -905,6 +919,9 @@ func (l *loggingT) createFiles(sev severity) error {
 	// Files are created in decreasing severity order, so as soon as we find one
 	// has already been created, we can stop.
 	for s := sev; s >= infoLog && l.file[s] == nil; s-- {
+		if s == fatalLog || s == warningLog {
+			continue
+		}
 		sb := &syncBuffer{
 			logger: l,
 			sev:    s,

@@ -33,6 +33,9 @@ import (
 // MaxSize is the maximum size of a log file in bytes.
 var MaxSize uint64 = 1024 * 1024 * 1800
 
+// RemainDays 日志保留的天数，默认是保留1天
+var RemainDays = 1
+
 // logDirs lists the candidate directories for new log files.
 var logDirs []string
 
@@ -80,14 +83,16 @@ func shortHostname(hostname string) string {
 
 // logName returns a new log file name containing tag, with start time t, and
 // the name for the symlink for tag.
-func logName(tag string, t time.Time) (name, link string) {
-	name = fmt.Sprintf("%s.log.%04d%02d%02d",
-		strings.ToLower(tag),
+func logName(s severity, t time.Time) (bak, name string) {
+	bak = fmt.Sprintf("%s.log.%04d%02d%02d.%02d",
+		strings.ToLower(severityName[s]),
 		t.Year(),
 		t.Month(),
 		t.Day(),
+		logFileCntS[s],
 	)
-	return name, strings.ToLower(tag) + ".log"
+	logFileCntS[s]++
+	return bak, strings.ToLower(severityName[s]) + ".log"
 }
 
 var onceLogDirs sync.Once
@@ -96,20 +101,19 @@ var onceLogDirs sync.Once
 // contains tag ("INFO", "FATAL", etc.) and t.  If the file is created
 // successfully, create also attempts to update the symlink for that tag, ignoring
 // errors.
-func create(tag string, t time.Time) (f *os.File, filename string, err error) {
+func create(s severity, t time.Time) (f *os.File, filename string, err error) {
 	onceLogDirs.Do(createLogDirs)
 	if len(logDirs) == 0 {
 		return nil, "", errors.New("log: no log dirs")
 	}
-	name, link := logName(tag, t)
+	bak, name := logName(s, t)
 	var lastErr error
 	for _, dir := range logDirs {
 		fname := filepath.Join(dir, name)
+		bname := filepath.Join(dir, bak)
+		_ = os.Rename(fname, bname) //info.log => info.log.20211001
 		f, err := os.Create(fname)
 		if err == nil {
-			symlink := filepath.Join(dir, link)
-			os.Remove(symlink)        // ignore err
-			os.Symlink(name, symlink) // ignore err
 			return f, fname, nil
 		}
 		lastErr = err

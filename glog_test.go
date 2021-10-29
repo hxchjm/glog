@@ -177,7 +177,6 @@ func TestHeader(t *testing.T) {
 	timeNow = func() time.Time {
 		return time.Date(2006, 1, 2, 15, 4, 5, .067890e9, time.Local)
 	}
-	pid = 1234
 	Info("test")
 	var line int
 	format := "I0102 15:04:05.067890    1234 glog_test.go:%d] test\n"
