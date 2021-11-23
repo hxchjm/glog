@@ -414,7 +414,7 @@ func init() {
 	logging.setVState(0, nil, false)
 	go logging.flushDaemon()
 
-	ClearLog() //定时清理日志
+	//ClearLog() //定时清理日志
 }
 
 // Flush flushes all pending log I/O.
@@ -425,6 +425,9 @@ func Flush() {
 //ClearLog clear the log which is out of time
 func ClearLog() {
 	startTimer(func() {
+		if len(logDirs) < 1 {
+			return
+		}
 		dir := logDirs[0] //取最上面的dir
 		files, _ := os.ReadDir(dir)
 		for _, file := range files {
